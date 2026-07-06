@@ -14,7 +14,7 @@ const footerLinks = {
     { label: "Community", href: "#" },
   ],
   Company: [
-    { label: "About", href: "#" },
+    { label: "About", href: "/about" },
     { label: "Careers", href: "#" },
     { label: "Contact", href: "#" },
     { label: "Press", href: "#" },
