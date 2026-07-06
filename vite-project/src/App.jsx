@@ -10,6 +10,8 @@ import LandingPage from './pages/LandingPage'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import Security from './pages/Security'
+import About from './pages/About'
+import Careers from './pages/Careers'
 import Integrations from './pages/Integrations/Integrations'
 import GithubCallback from './pages/Integrations/GithubCallback'
 
@@ -34,6 +36,7 @@ function App() {
       <Route path="/terms" element={<Terms />} />
       <Route path="/security" element={<Security />} />
       <Route path="/about" element={<About />} />
+      <Route path="/careers" element={<Careers />} />
 
       {/* Protected routes */}
       <Route
