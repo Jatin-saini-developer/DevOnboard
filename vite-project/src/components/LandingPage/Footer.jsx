@@ -7,17 +7,10 @@ const footerLinks = {
     { label: "Pricing", href: "#pricing" },
     { label: "Changelog", href: "#" },
   ],
-  Resources: [
-    { label: "Documentation", href: "#" },
-    { label: "API Reference", href: "#" },
-    { label: "Blog", href: "#" },
-    { label: "Community", href: "#" },
-  ],
   Company: [
     { label: "About", href: "/about" },
     { label: "Careers", href: "/careers" },
     { label: "Contact", href: "#" },
-    { label: "Press", href: "#" },
   ],
   Legal: [
     { label: "Privacy", href: "/privacy" },
@@ -29,10 +22,10 @@ const footerLinks = {
 export default function Footer() {
   return (
     <footer className="border-t border-white/[0.04]">
-      <div className="max-w-7xl mx-auto px-6 py-14">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-10">
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        <div className="flex flex-col md:flex-row md:justify-between gap-12">
           {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
+          <div className="max-w-[260px]">
             <Link to="/" className="flex items-center gap-2.5 mb-4">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.08] border border-white/[0.06]">
                 <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -43,31 +36,33 @@ export default function Footer() {
                 DevOnboard
               </span>
             </Link>
-            <p className="text-[12px] text-neutral-700 leading-relaxed max-w-xs">
+            <p className="text-[12px] text-neutral-700 leading-relaxed">
               Automate developer onboarding with visual workflows. Built for engineering teams.
             </p>
           </div>
 
           {/* Links */}
-          {Object.entries(footerLinks).map(([category, links]) => (
-            <div key={category}>
-              <h4 className="text-[12px] font-medium text-neutral-400 mb-4">
-                {category}
-              </h4>
-              <ul className="space-y-2.5">
-                {links.map((link) => (
-                  <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="text-[13px] text-neutral-700 hover:text-neutral-300 transition-colors duration-200"
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <div className="flex flex-wrap gap-16 sm:gap-20">
+            {Object.entries(footerLinks).map(([category, links]) => (
+              <div key={category}>
+                <h4 className="text-[12px] font-medium text-neutral-400 mb-4">
+                  {category}
+                </h4>
+                <ul className="space-y-2.5">
+                  {links.map((link) => (
+                    <li key={link.label}>
+                      <a
+                        href={link.href}
+                        className="text-[13px] text-neutral-700 hover:text-neutral-300 transition-colors duration-200"
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Bottom bar */}

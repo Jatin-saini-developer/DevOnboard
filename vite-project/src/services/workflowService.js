@@ -31,3 +31,8 @@ export async function updateWorkflow(workflowId, payload) {
   const response = await api.put(`/workflows/${workflowId}`, payload)
   return response.data
 }
+
+export async function executeWorkflow(workflowId, triggerData) {
+  const response = await api.post(`/workflows/${workflowId}/execute`, { triggerData })
+  return response.data
+}

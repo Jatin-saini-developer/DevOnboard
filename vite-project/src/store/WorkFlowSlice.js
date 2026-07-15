@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
-import { getWorkflowById, updateWorkflow } from '../services/workflowService'
+import { getWorkflowById, updateWorkflow, executeWorkflow } from '../services/workflowService'
 
 const initialState = {
   currentWorkflowId: null,
@@ -11,6 +11,9 @@ const initialState = {
   saving: false,
   error: null,
   lastSavedAt: null,
+  executing: false,
+  executionResult: null,
+  executionError: null,
 }
 
 // ─── Async thunks ────────────────────────────────────────────────────────────
@@ -39,6 +42,21 @@ export const saveWorkflow = createAsyncThunk(
       return data
     } catch (err) {
       return rejectWithValue(err.message)
+    }
+  }
+)
+
+export const runWorkflow = createAsyncThunk(
+  'workflow/runWorkflow',
+  async (triggerData, { getState, rejectWithValue }) => {
+    const { workflow } = getState()
+    try {
+      const data = await executeWorkflow(workflow.currentWorkflowId, triggerData)
+      return data
+    } catch (err) {
+      return rejectWithValue(
+        err?.response?.data?.message || err.message || 'Execution failed'
+      )
     }
   }
 )
@@ -77,6 +95,13 @@ const workflowSlice = createSlice({
       state.workflowName = 'Untitled Workflow'
       state.error = null
       state.lastSavedAt = null
+      state.executing = false
+      state.executionResult = null
+      state.executionError = null
+    },
+    clearExecutionResult: (state) => {
+      state.executionResult = null
+      state.executionError = null
     },
   },
   extraReducers: (builder) => {
@@ -112,6 +137,22 @@ const workflowSlice = createSlice({
         state.saving = false
         state.error = action.payload
       })
+
+    // ── runWorkflow ────────────────────────────────────────────────
+    builder
+      .addCase(runWorkflow.pending, (state) => {
+        state.executing = true
+        state.executionResult = null
+        state.executionError = null
+      })
+      .addCase(runWorkflow.fulfilled, (state, action) => {
+        state.executing = false
+        state.executionResult = action.payload
+      })
+      .addCase(runWorkflow.rejected, (state, action) => {
+        state.executing = false
+        state.executionError = action.payload
+      })
   },
 })
 
@@ -122,6 +163,7 @@ export const {
   updateNodeData,
   setWorkflowName,
   resetWorkflow,
+  clearExecutionResult,
 } = workflowSlice.actions
 
 // ─── Selectors ────────────────────────────────────────────────────────────────
@@ -132,5 +174,8 @@ export const selectWorkflowLoading = (state) => state.workflow.loading
 export const selectWorkflowSaving = (state) => state.workflow.saving
 export const selectWorkflowError = (state) => state.workflow.error
 export const selectLastSavedAt = (state) => state.workflow.lastSavedAt
+export const selectWorkflowExecuting = (state) => state.workflow.executing
+export const selectExecutionResult = (state) => state.workflow.executionResult
+export const selectExecutionError = (state) => state.workflow.executionError
 
 export default workflowSlice.reducer
