@@ -9,7 +9,7 @@ const nodeList = [
     type: 'github',
     label: 'GitHub',
     icon: '🐙',
-    description: 'Add to GitHub Org',
+    description: 'GitHub Actions',
   },
   {
     type: 'slack',

@@ -82,7 +82,11 @@ function CanvasInner() {
       id: `${idRef.current++}`,
       type,
       position,
-      data: { label: nodeLabels[type] },
+      data: {
+        label: nodeLabels[type],
+        // GitHub nodes need a default action so the executor always has one
+        ...(type === 'github' && { action: 'invite_to_org' }),
+      },
     }
 
     dispatch(setNodes([...nodes, newNode]))
