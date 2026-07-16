@@ -56,6 +56,9 @@ function ConfigPanel() {
   };
 
   const handleChange = (field, value) => {
+    // [NODE-TRACE] Stage 1: ConfigPanel — log after every update
+    const updatedData = { ...selectedNode.data, [field]: value };
+    console.log(`[NODE-TRACE] [1/8 ConfigPanel] Field changed: "${field}"`, JSON.stringify({ type: selectedNode.type, id: selectedNode.id, data: updatedData }, null, 2));
     dispatch(
       updateNodeData({
         id: selectedNode.id,

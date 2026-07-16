@@ -34,6 +34,14 @@ export const saveWorkflow = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     const { workflow } = getState()
     try {
+      // [NODE-TRACE] Stage 2: Before save — log the exact nodes being sent
+      const githubNodes = workflow.nodes.filter(n => n.type === 'github')
+      console.log(`[NODE-TRACE] [2/8 saveWorkflow] Sending ${workflow.nodes.length} nodes to backend. GitHub nodes: ${githubNodes.length}`)
+      githubNodes.forEach(n => {
+        console.log(`[NODE-TRACE] [2/8 saveWorkflow] GitHub node:`, JSON.stringify({ id: n.id, type: n.type, data: n.data }, null, 2))
+      })
+      console.log(`[NODE-TRACE] [2/8 saveWorkflow] FULL nodes array:`, JSON.stringify(workflow.nodes.map(n => ({ id: n.id, type: n.type, data: n.data })), null, 2))
+
       const data = await updateWorkflow(workflow.currentWorkflowId, {
         name: workflow.workflowName,
         nodes: workflow.nodes,
