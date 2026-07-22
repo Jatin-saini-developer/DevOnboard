@@ -11,29 +11,12 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react'
 import { useDispatch, useSelector } from 'react-redux'
-import { setNodes, setEdges, setSelectedNode } from '../../store/WorkFlowSlice'
-import TriggerNode from '../Nodes/TriggerNode'
-import GithubNode from '../Nodes/GithubNode'
-import SlackNode from '../Nodes/SlackNode'
-import JiraNode from '../Nodes/JiraNode'
-import NotionNode from '../Nodes/NotionNode'
+import { setNodes, setEdges, setSelectedNodeId } from '../../store/WorkFlowSlice'
+import frontendBindings from '../../registry/bindings'
 import '@xyflow/react/dist/style.css'
 
-const nodeTypes = {
-  trigger: TriggerNode,
-  github: GithubNode,
-  slack: SlackNode,
-  jira: JiraNode,
-  notion: NotionNode,
-}
-
-const nodeLabels = {
-  trigger: 'New Dev Joins',
-  github: 'Add to GitHub Org',
-  slack: 'Add to Slack Channels',
-  jira: 'Add to Jira Project',
-  notion: 'Send Notion Docs',
-}
+const nodeTypes = frontendBindings.getReactFlowNodeTypes()
+const nodeLabels = frontendBindings.getReactFlowNodeLabels()
 
 const defaultEdgeOptions = {
   animated: true,
@@ -83,9 +66,7 @@ function CanvasInner() {
       type,
       position,
       data: {
-        label: nodeLabels[type],
-        // GitHub nodes need a default action so the executor always has one
-        ...(type === 'github' && { action: 'invite_to_org' }),
+        label: nodeLabels[type] || 'Node',
       },
     }
 
@@ -93,11 +74,11 @@ function CanvasInner() {
   }, [nodes, dispatch, screenToFlowPosition])
 
   const onNodeClick = useCallback((event, node) => {
-    dispatch(setSelectedNode(node))
+    dispatch(setSelectedNodeId(node.id))
   }, [dispatch])
 
   const onPaneClick = useCallback(() => {
-    dispatch(setSelectedNode(null))
+    dispatch(setSelectedNodeId(null))
   }, [dispatch])
 
   const isEmpty = nodes.length === 0

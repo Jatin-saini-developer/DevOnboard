@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux'
-import { setNodes, setEdges, setSelectedNode } from '../../store/WorkFlowSlice'
+import { setNodes, setEdges, setSelectedNodeId } from '../../store/WorkFlowSlice'
 
 function NodeWrapper({ id, children }) {
   const dispatch = useDispatch()
@@ -14,7 +14,7 @@ function NodeWrapper({ id, children }) {
     )
     dispatch(setNodes(updatedNodes))
     dispatch(setEdges(updatedEdges))
-    dispatch(setSelectedNode(null))
+    dispatch(setSelectedNodeId(null))
   }
 
   return (

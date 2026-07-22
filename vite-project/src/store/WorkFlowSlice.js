@@ -1,11 +1,11 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit'
 import { getWorkflowById, updateWorkflow, executeWorkflow } from '../services/workflowService'
 
 const initialState = {
   currentWorkflowId: null,
   nodes: [],
   edges: [],
-  selectedNode: null,
+  selectedNodeId: null,
   workflowName: 'Untitled Workflow',
   loading: false,
   saving: false,
@@ -63,7 +63,7 @@ export const runWorkflow = createAsyncThunk(
       return data
     } catch (err) {
       return rejectWithValue(
-        err?.response?.data?.message || err.message || 'Execution failed'
+        err?.data?.message || err.message || 'Execution failed'
       )
     }
   }
@@ -81,8 +81,9 @@ const workflowSlice = createSlice({
     setEdges: (state, action) => {
       state.edges = action.payload
     },
-    setSelectedNode: (state, action) => {
-      state.selectedNode = action.payload
+    setSelectedNodeId: (state, action) => {
+      // Payload is a string node ID or null — never a full node object
+      state.selectedNodeId = action.payload
     },
     updateNodeData: (state, action) => {
       const { id, data } = action.payload
@@ -99,7 +100,7 @@ const workflowSlice = createSlice({
       state.currentWorkflowId = null
       state.nodes = []
       state.edges = []
-      state.selectedNode = null
+      state.selectedNodeId = null
       state.workflowName = 'Untitled Workflow'
       state.error = null
       state.lastSavedAt = null
@@ -167,7 +168,7 @@ const workflowSlice = createSlice({
 export const {
   setNodes,
   setEdges,
-  setSelectedNode,
+  setSelectedNodeId,
   updateNodeData,
   setWorkflowName,
   resetWorkflow,
@@ -185,5 +186,16 @@ export const selectLastSavedAt = (state) => state.workflow.lastSavedAt
 export const selectWorkflowExecuting = (state) => state.workflow.executing
 export const selectExecutionResult = (state) => state.workflow.executionResult
 export const selectExecutionError = (state) => state.workflow.executionError
+
+// ─── Selection Selectors ───────────────────────────────────────────────────────
+// Single source of truth: selectedNodeId is a string ID stored in Redux.
+// selectSelectedNode is memoized via createSelector: the result function only
+// re-runs when nodes or selectedNodeId actually change reference/value.
+export const selectSelectedNodeId = (state) => state.workflow.selectedNodeId
+export const selectSelectedNode = createSelector(
+  selectNodes,
+  selectSelectedNodeId,
+  (nodes, selectedNodeId) => nodes.find((n) => n.id === selectedNodeId) ?? null
+)
 
 export default workflowSlice.reducer

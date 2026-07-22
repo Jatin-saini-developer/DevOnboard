@@ -1,37 +1,9 @@
-const nodeList = [
-  {
-    type: 'trigger',
-    label: 'Trigger',
-    icon: '⚡',
-    description: 'Start the workflow',
-  },
-  {
-    type: 'github',
-    label: 'GitHub',
-    icon: '🐙',
-    description: 'GitHub Actions',
-  },
-  {
-    type: 'slack',
-    label: 'Slack',
-    icon: '💬',
-    description: 'Add to Slack Channels',
-  },
-  {
-    type: 'jira',
-    label: 'Jira',
-    icon: '📋',
-    description: 'Add to Jira Project',
-  },
-  {
-    type: 'notion',
-    label: 'Notion',
-    icon: '📝',
-    description: 'Send Notion Docs',
-  },
-]
+import { nodeRegistry } from '../../../../shared/registry/nodeRegistry.js'
+import frontendBindings from '../../registry/bindings'
 
 function Sidebar() {
+  const categories = nodeRegistry.getCategories()
+
   const onDragStart = (event, nodeType) => {
     event.dataTransfer.setData('application/reactflow', nodeType)
     event.dataTransfer.effectAllowed = 'move'
@@ -61,42 +33,61 @@ function Sidebar() {
         Nodes
       </p>
 
-      {nodeList.map((node) => (
-        <div
-          key={node.type}
-          draggable
-          onDragStart={(e) => onDragStart(e, node.type)}
-          style={{
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: '8px',
-            padding: '10px 12px',
-            cursor: 'grab',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            color: 'rgba(255,255,255,0.7)',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-            e.currentTarget.style.color = '#fff'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.02)'
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
-            e.currentTarget.style.color = 'rgba(255,255,255,0.7)'
-          }}
-        >
-          <span style={{ fontSize: '18px' }}>{node.icon}</span>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: '500' }}>
-              {node.label}
-            </div>
-            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)' }}>
-              {node.description}
-            </div>
+      {categories.map((catGroup) => (
+        <div key={catGroup.category} style={{ marginTop: '8px', marginBottom: '4px' }}>
+          <p style={{
+            color: 'rgba(255,255,255,0.4)',
+            fontSize: '11px',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            margin: '8px 0 6px 6px',
+          }}>
+            {catGroup.category}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {catGroup.items.map((nodeDef) => {
+              const icon = frontendBindings.getIcon(nodeDef.iconName || nodeDef.id)
+              return (
+                <div
+                  key={nodeDef.id}
+                  draggable
+                  onDragStart={(e) => onDragStart(e, nodeDef.id)}
+                  style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: '8px',
+                    padding: '8px 10px',
+                    cursor: 'grab',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    color: 'rgba(255,255,255,0.7)',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+                    e.currentTarget.style.color = '#fff'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.02)'
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.7)'
+                  }}
+                >
+                  <span style={{ fontSize: '16px' }}>{icon}</span>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: '500' }}>
+                      {nodeDef.label}
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)' }}>
+                      {nodeDef.description}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       ))}

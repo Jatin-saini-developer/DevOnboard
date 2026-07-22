@@ -33,16 +33,20 @@ function Topbar() {
     githubUsername: '',
   })
 
-  // Auto-close modal on success after 5 seconds
+  const execution = executionResult?.execution
+  const executionCompleted = execution?.status === 'completed'
+
+  // Auto-close modal only after a completed execution. Failed executions stay
+  // visible so the user can read the step-level error returned by the backend.
   useEffect(() => {
-    if (executionResult && !executionError) {
+    if (executionCompleted && !executionError) {
       const timer = setTimeout(() => {
         setShowRunModal(false)
         dispatch(clearExecutionResult())
       }, 8000)
       return () => clearTimeout(timer)
     }
-  }, [executionResult, executionError, dispatch])
+  }, [executionCompleted, executionError, dispatch])
 
   const handleSave = async () => {
     await dispatch(saveWorkflow())
@@ -324,7 +328,7 @@ function Topbar() {
                   height: '28px',
                   borderRadius: '8px',
                   background: executionResult
-                    ? (executionResult?.data?.execution?.status === 'completed'
+                    ? (executionCompleted
                         ? 'rgba(52,211,153,0.12)'
                         : 'rgba(251,113,133,0.12)')
                     : 'rgba(255,255,255,0.04)',
@@ -333,7 +337,7 @@ function Topbar() {
                   justifyContent: 'center',
                 }}>
                   {executionResult ? (
-                    executionResult?.data?.execution?.status === 'completed' ? (
+                    executionCompleted ? (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
@@ -587,7 +591,7 @@ function InputField({ id, label, type = 'text', placeholder, value, onChange, re
 
 // ─── Execution Result View ────────────────────────────────────────────────────
 function ExecutionResultView({ result }) {
-  const execution = result?.data?.execution
+  const execution = result?.execution
   if (!execution) return null
 
   const isSuccess = execution.status === 'completed'

@@ -1,174 +1,110 @@
 import { useDispatch, useSelector } from "react-redux";
-import { setSelectedNode, updateNodeData } from "../../store/WorkFlowSlice";
-
-// ─── GitHub Action Registry ──────────────────────────────────────────────────
-// Source of truth for which fields each GitHub action needs.
-// The executor's SUPPORTED_ACTIONS mirrors this structure on the backend.
-const GITHUB_ACTIONS = {
-  invite_to_org: {
-    label: 'Invite to Organisation',
-    description: 'Send an org invitation to the new developer',
-    fields: [
-      { key: 'organization', label: 'Organisation Name', type: 'text', placeholder: 'e.g. my-company', required: true },
-      { key: 'role', label: 'Role', type: 'select', options: [
-        { value: 'member', label: 'Member' },
-        { value: 'admin', label: 'Admin' },
-      ], default: 'member' },
-    ],
-  },
-  add_to_team: {
-    label: 'Add to Team',
-    description: 'Add the developer to a GitHub team',
-    fields: [
-      { key: 'organization', label: 'Organisation Name', type: 'text', placeholder: 'e.g. my-company', required: true },
-      { key: 'team', label: 'Team Slug', type: 'text', placeholder: 'e.g. engineering', required: true },
-      { key: 'role', label: 'Role', type: 'select', options: [
-        { value: 'member', label: 'Member' },
-        { value: 'maintainer', label: 'Maintainer' },
-      ], default: 'member' },
-    ],
-  },
-  grant_repo_access: {
-    label: 'Grant Repository Access',
-    description: 'Grant access to one or more repositories',
-    fields: [
-      { key: 'organization', label: 'Organisation Name', type: 'text', placeholder: 'e.g. my-company', required: true },
-      { key: 'repositories', label: 'Repositories', type: 'tags', placeholder: 'Type repo name + Enter', required: true },
-      { key: 'role', label: 'Permission', type: 'select', options: [
-        { value: 'pull', label: 'Pull (read only)' },
-        { value: 'push', label: 'Push (read/write)' },
-        { value: 'admin', label: 'Admin' },
-        { value: 'maintain', label: 'Maintain' },
-        { value: 'triage', label: 'Triage' },
-      ], default: 'push' },
-    ],
-  },
-};
+import { setSelectedNodeId, updateNodeData } from "../../store/WorkFlowSlice";
+import { selectSelectedNode } from "../../store/WorkFlowSlice";
+import { nodeRegistry } from "../../../../shared/registry/nodeRegistry.js";
 
 function ConfigPanel() {
   const dispatch = useDispatch();
-  const selectedNode = useSelector((state) => state.workflow.selectedNode);
+  // selectSelectedNode derives the live node from state.nodes — always current
+  const selectedNode = useSelector(selectSelectedNode);
 
   if (!selectedNode) return null;
 
   const handleClose = () => {
-    dispatch(setSelectedNode(null));
+    dispatch(setSelectedNodeId(null));
   };
 
   const handleChange = (field, value) => {
-    // [NODE-TRACE] Stage 1: ConfigPanel — log after every update
     const updatedData = { ...selectedNode.data, [field]: value };
-    console.log(`[NODE-TRACE] [1/8 ConfigPanel] Field changed: "${field}"`, JSON.stringify({ type: selectedNode.type, id: selectedNode.id, data: updatedData }, null, 2));
+    console.log(`[NODE-TRACE] ConfigPanel updated "${field}":`, JSON.stringify({ type: selectedNode.type, id: selectedNode.id, data: updatedData }, null, 2));
     dispatch(
       updateNodeData({
         id: selectedNode.id,
         data: { [field]: value },
-      }),
+      })
     );
   };
 
-  const renderFields = () => {
-    switch (selectedNode.type) {
-      case "trigger":
-        return (
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Trigger Name</label>
-            <input
-              style={styles.input}
-              defaultValue={selectedNode.data.label}
-              onChange={(e) => handleChange("label", e.target.value)}
-              placeholder="e.g. New Dev Joins"
-            />
-            <label style={styles.label}>Description</label>
-            <input
-              style={styles.input}
-              defaultValue={selectedNode.data.description || ""}
-              onChange={(e) => handleChange("description", e.target.value)}
-              placeholder="What triggers this workflow?"
-            />
-          </div>
-        );
+  // Retrieve declarative schema definition from shared registry
+  const nodeDef = nodeRegistry.get(selectedNode.type);
+  const inputs = nodeDef?.inputs || [];
 
-      case "github":
-        return <GitHubFields node={selectedNode} onChange={handleChange} />;
+  const renderField = (inputSpec) => {
+    const { key, label, type, required, placeholder, default: defaultValue, defaultValue: altDefault, description, options } = inputSpec;
+    const value = selectedNode.data[key];
+    const fallbackDefault = defaultValue !== undefined ? defaultValue : altDefault;
+    const currentValue = value !== undefined ? value : fallbackDefault;
 
-      case "slack":
-        return (
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Workspace Name</label>
-            <input
-              style={styles.input}
-              defaultValue={selectedNode.data.workspace || ""}
-              onChange={(e) => handleChange("workspace", e.target.value)}
-              placeholder="e.g. my-company"
-            />
-            <label style={styles.label}>Channels (comma separated)</label>
-            <input
-              style={styles.input}
-              defaultValue={selectedNode.data.channels || ""}
-              onChange={(e) => handleChange("channels", e.target.value)}
-              placeholder="e.g. general, engineering, random"
-            />
-          </div>
-        );
+    return (
+      <div key={key} style={{ marginBottom: '14px' }}>
+        {label && (
+          <label style={styles.label}>
+            {label} {required && <span style={{ color: 'rgba(251,113,133,0.6)' }}>*</span>}
+          </label>
+        )}
 
-      case "jira":
-        return (
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Project Key</label>
-            <input
-              style={styles.input}
-              defaultValue={selectedNode.data.projectKey || ""}
-              onChange={(e) => handleChange("projectKey", e.target.value)}
-              placeholder="e.g. ENG"
-            />
-            <label style={styles.label}>Team Name</label>
-            <input
-              style={styles.input}
-              defaultValue={selectedNode.data.team || ""}
-              onChange={(e) => handleChange("team", e.target.value)}
-              placeholder="e.g. Engineering"
-            />
-            <label style={styles.label}>Role</label>
-            <select
-              style={styles.input}
-              defaultValue={selectedNode.data.role || "developer"}
-              onChange={(e) => handleChange("role", e.target.value)}
-            >
-              <option value="developer">Developer</option>
-              <option value="viewer">Viewer</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-        );
+        {type === 'text' && (
+          <input
+            style={styles.input}
+            value={currentValue ?? ''}
+            onChange={(e) => handleChange(key, e.target.value)}
+            placeholder={placeholder || ''}
+          />
+        )}
 
-      case "notion":
-        return (
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Workspace Name</label>
-            <input
-              style={styles.input}
-              defaultValue={selectedNode.data.workspace || ""}
-              onChange={(e) => handleChange("workspace", e.target.value)}
-              placeholder="e.g. my-company"
-            />
-            <label style={styles.label}>Pages to Share (comma separated)</label>
-            <input
-              style={styles.input}
-              defaultValue={selectedNode.data.pages || ""}
-              onChange={(e) => handleChange("pages", e.target.value)}
-              placeholder="e.g. Onboarding Guide, Dev Setup, Team Norms"
-            />
-          </div>
-        );
+        {type === 'textarea' && (
+          <textarea
+            style={{ ...styles.input, height: '70px', paddingTop: '8px', resize: 'vertical' }}
+            value={currentValue ?? ''}
+            onChange={(e) => handleChange(key, e.target.value)}
+            placeholder={placeholder || ''}
+          />
+        )}
 
-      default:
-        return (
-          <p style={{ color: "rgba(255,255,255,0.3)", fontSize: "13px" }}>
-            No configuration available for this node.
+        {type === 'select' && (
+          <select
+            style={styles.input}
+            value={currentValue ?? ''}
+            onChange={(e) => handleChange(key, e.target.value)}
+          >
+            {(options || []).map((opt) => {
+              const optVal = typeof opt === 'object' ? opt.value : opt;
+              const optLabel = typeof opt === 'object' ? opt.label : opt;
+              return (
+                <option key={optVal} value={optVal}>
+                  {optLabel}
+                </option>
+              );
+            })}
+          </select>
+        )}
+
+        {type === 'checkbox' && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
+            <input
+              type="checkbox"
+              checked={!!currentValue}
+              onChange={(e) => handleChange(key, e.target.checked)}
+            />
+            {placeholder || label}
+          </label>
+        )}
+
+        {type === 'tags' && (
+          <TagInput
+            value={currentValue || []}
+            onChange={(newTags) => handleChange(key, newTags)}
+            placeholder={placeholder || 'Type and press Enter'}
+          />
+        )}
+
+        {description && (
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', marginTop: '4px', margin: '4px 0 0 0' }}>
+            {description}
           </p>
-        );
-    }
+        )}
+      </div>
+    );
   };
 
   return (
@@ -176,8 +112,8 @@ function ConfigPanel() {
       {/* Header */}
       <div style={styles.header}>
         <div>
-          <p style={styles.nodeType}>{selectedNode.type.toUpperCase()}</p>
-          <p style={styles.nodeLabel}>{selectedNode.data.label}</p>
+          <p style={styles.nodeType}>{(nodeDef?.category || selectedNode.type).toUpperCase()}</p>
+          <p style={styles.nodeLabel}>{nodeDef?.label || selectedNode.data?.label || selectedNode.type}</p>
         </div>
         <button
           onClick={handleClose}
@@ -192,105 +128,52 @@ function ConfigPanel() {
       {/* Divider */}
       <div style={styles.divider} />
 
-      {/* Fields */}
-      <div style={styles.body}>{renderFields()}</div>
-    </div>
-  );
-}
-
-// ─── GitHub Action-Driven Fields ─────────────────────────────────────────────
-function GitHubFields({ node, onChange }) {
-  const currentAction = node.data.action || 'invite_to_org';
-  const actionSpec = GITHUB_ACTIONS[currentAction];
-
-  return (
-    <div style={styles.fieldGroup}>
-      {/* Action selector — always first */}
-      <label style={styles.label}>Action</label>
-      <select
-        style={styles.input}
-        value={currentAction}
-        onChange={(e) => onChange("action", e.target.value)}
-      >
-        {Object.entries(GITHUB_ACTIONS).map(([key, spec]) => (
-          <option key={key} value={key}>{spec.label}</option>
-        ))}
-      </select>
-
-      {/* Action description */}
-      {actionSpec && (
-        <p style={{
-          color: 'rgba(255,255,255,0.25)',
-          fontSize: '11px',
-          margin: '2px 0 8px',
-          lineHeight: '1.4',
-        }}>
-          {actionSpec.description}
-        </p>
-      )}
-
-      {/* Dynamic fields based on selected action */}
-      {actionSpec && actionSpec.fields.map((field) => (
-        <div key={field.key} style={{ marginTop: '4px' }}>
-          <label style={styles.label}>
-            {field.label}
-            {field.required && <span style={{ color: 'rgba(251,113,133,0.6)', marginLeft: '3px' }}>*</span>}
-          </label>
-
-          {field.type === 'text' && (
+      {/* Dynamic Schema Form Engine */}
+      <div style={styles.body}>
+        {inputs.length > 0 ? (
+          <div style={styles.fieldGroup}>
+            {inputs.map(renderField)}
+            {nodeDef?.provider === 'github' && <UsernameInfoNote />}
+          </div>
+        ) : (
+          <div style={styles.fieldGroup}>
+            <label style={styles.label}>Label</label>
             <input
               style={styles.input}
-              value={node.data[field.key] || ''}
-              onChange={(e) => onChange(field.key, e.target.value)}
-              placeholder={field.placeholder || ''}
+              value={selectedNode.data.label || ''}
+              onChange={(e) => handleChange('label', e.target.value)}
             />
-          )}
-
-          {field.type === 'select' && (
-            <select
-              style={styles.input}
-              value={node.data[field.key] || field.default || ''}
-              onChange={(e) => onChange(field.key, e.target.value)}
-            >
-              {field.options.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          )}
-
-          {field.type === 'tags' && (
-            <TagInput
-              value={node.data[field.key] || []}
-              onChange={(newTags) => onChange(field.key, newTags)}
-              placeholder={field.placeholder || ''}
-            />
-          )}
-        </div>
-      ))}
-
-      {/* Username note */}
-      <div style={{
-        marginTop: '16px',
-        padding: '10px 12px',
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.04)',
-        borderRadius: '8px',
-      }}>
-        <p style={{
-          color: 'rgba(255,255,255,0.3)',
-          fontSize: '11px',
-          margin: 0,
-          lineHeight: '1.5',
-        }}>
-          💡 The target <strong style={{ color: 'rgba(255,255,255,0.5)' }}>username</strong> is
-          automatically populated from the trigger data at execution time.
-        </p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-// ─── Tag Input Component (for repositories) ─────────────────────────────────
+// ─── Info Note Component ─────────────────────────────────────────────────────
+function UsernameInfoNote() {
+  return (
+    <div style={{
+      marginTop: '16px',
+      padding: '10px 12px',
+      background: 'rgba(255,255,255,0.02)',
+      border: '1px solid rgba(255,255,255,0.04)',
+      borderRadius: '8px',
+    }}>
+      <p style={{
+        color: 'rgba(255,255,255,0.3)',
+        fontSize: '11px',
+        margin: 0,
+        lineHeight: '1.5',
+      }}>
+        💡 The target <strong style={{ color: 'rgba(255,255,255,0.5)' }}>username</strong> is
+        automatically populated from the trigger data at execution time.
+      </p>
+    </div>
+  );
+}
+
+// ─── Tag Input Component (for array inputs like repositories) ────────────────
 function TagInput({ value, onChange, placeholder }) {
   const tags = Array.isArray(value) ? value : [];
 
@@ -314,7 +197,6 @@ function TagInput({ value, onChange, placeholder }) {
 
   return (
     <div>
-      {/* Tags display */}
       {tags.length > 0 && (
         <div style={{
           display: 'flex',
@@ -358,94 +240,90 @@ function TagInput({ value, onChange, placeholder }) {
           ))}
         </div>
       )}
-
-      {/* Input field */}
       <input
         style={styles.input}
-        placeholder={placeholder}
         onKeyDown={handleKeyDown}
+        placeholder={placeholder || 'Type and press Enter'}
       />
     </div>
   );
 }
 
+// ─── Inline Styles ──────────────────────────────────────────────────────────
 const styles = {
   panel: {
-    width: "280px",
-    height: "100%",
-    background: "#000",
-    borderLeft: "1px solid rgba(255,255,255,0.06)",
-    fontFamily: "system-ui, -apple-system, sans-serif",
-    display: "flex",
-    flexDirection: "column",
-    position: "absolute",
-    right: 0,
-    top: 0,
-    zIndex: 10,
+    width: '320px',
+    height: '100%',
+    background: '#000',
+    borderLeft: '1px solid rgba(255,255,255,0.06)',
+    display: 'flex',
+    flexDirection: 'column',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    boxSizing: 'border-box',
   },
   header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "14px 16px",
+    padding: '16px 20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   nodeType: {
-    color: "rgba(255,255,255,0.25)",
-    fontSize: "10px",
-    fontWeight: "500",
-    letterSpacing: "0.12em",
-    margin: "0 0 4px",
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: '10px',
+    fontWeight: '600',
+    letterSpacing: '0.1em',
+    margin: '0 0 2px 0',
   },
   nodeLabel: {
-    color: "#fff",
-    fontSize: "14px",
-    fontWeight: "600",
+    color: '#fff',
+    fontSize: '14px',
+    fontWeight: '600',
     margin: 0,
   },
   closeBtn: {
-    background: "transparent",
-    border: "none",
-    color: "rgba(255,255,255,0.3)",
-    fontSize: "14px",
-    cursor: "pointer",
-    padding: "4px",
-    transition: "color 0.15s ease",
+    background: 'none',
+    border: 'none',
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: '14px',
+    cursor: 'pointer',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    transition: 'color 0.15s ease',
   },
   divider: {
-    height: "1px",
-    background: "rgba(255,255,255,0.06)",
-    margin: "0 16px",
+    height: '1px',
+    background: 'rgba(255,255,255,0.06)',
+    width: '100%',
   },
   body: {
-    padding: "16px",
-    overflowY: "auto",
+    padding: '20px',
     flex: 1,
+    overflowY: 'auto',
   },
   fieldGroup: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
+    display: 'flex',
+    flexDirection: 'column',
   },
   label: {
-    color: "rgba(255,255,255,0.35)",
-    fontSize: "11px",
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-    marginTop: "10px",
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: '11px',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    marginBottom: '6px',
+    display: 'block',
   },
   input: {
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.06)",
-    borderRadius: "7px",
-    color: "#fff",
-    padding: "8px 10px",
-    fontSize: "13px",
-    outline: "none",
-    width: "100%",
-    boxSizing: "border-box",
-    fontFamily: "inherit",
-    transition: "border-color 0.15s ease",
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: '7px',
+    padding: '9px 12px',
+    color: '#fff',
+    fontSize: '13px',
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box',
+    transition: 'border-color 0.15s ease',
   },
 };
 
