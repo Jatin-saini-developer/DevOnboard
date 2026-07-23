@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import {
   connectGithub,
+  connectSlack,
   getIntegrationsStatus,
   disconnectIntegration,
 } from './integrationsController.js'
@@ -12,6 +13,7 @@ const router = Router()
 router.use(authMiddleware)
 
 router.post('/github/connect', connectGithub)
+router.post('/slack/connect', connectSlack)
 router.get('/status', getIntegrationsStatus)
 router.delete('/:provider', disconnectIntegration)
 

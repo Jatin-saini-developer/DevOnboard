@@ -36,6 +36,13 @@ const IntegrationSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    metadata: {
+      type: mongoose.Schema.Types.Mixed,
+      // Provider-specific data — GitHub ne kuch nahi likhna,
+      // Slack mein workspaceId/workspaceName yahan aayega,
+      // future providers (Jira, Notion) bhi yahan store karenge
+      default: null,
+    },
   },
   {
     timestamps: true,

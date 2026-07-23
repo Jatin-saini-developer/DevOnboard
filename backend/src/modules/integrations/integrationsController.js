@@ -6,6 +6,7 @@ import {
   getIntegrationsStatusService,
   disconnectIntegrationService,
 } from './githubService.js'
+import { connectSlackService } from './slackService.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  CONNECT GITHUB
@@ -25,6 +26,27 @@ export const connectGithub = asyncHandler(async (req, res) => {
 
   return res.status(200).json(
     new ApiResponse(200, 'GitHub connected successfully', data)
+  )
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CONNECT SLACK
+//  POST /api/v1/integrations/slack/connect
+// ─────────────────────────────────────────────────────────────────────────────
+export const connectSlack = asyncHandler(async (req, res) => {
+  const { code } = req.body
+
+  if (!code) {
+    throw new ApiError(400, 'Authorization code is required')
+  }
+
+  const data = await connectSlackService({
+    code,
+    userId: req.user._id,
+  })
+
+  return res.status(200).json(
+    new ApiResponse(200, 'Slack connected successfully', data)
   )
 })
 
