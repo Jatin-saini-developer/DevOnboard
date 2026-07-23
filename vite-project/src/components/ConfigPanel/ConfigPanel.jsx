@@ -2,6 +2,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { setSelectedNodeId, updateNodeData } from "../../store/WorkFlowSlice";
 import { selectSelectedNode } from "../../store/WorkFlowSlice";
 import { nodeRegistry } from "../../../../shared/registry/nodeRegistry.js";
+import ChannelSelect from "./ChannelSelect";
 
 function ConfigPanel() {
   const dispatch = useDispatch();
@@ -95,6 +96,13 @@ function ConfigPanel() {
             value={currentValue || []}
             onChange={(newTags) => handleChange(key, newTags)}
             placeholder={placeholder || 'Type and press Enter'}
+          />
+        )}
+
+        {type === 'channelSelect' && (
+          <ChannelSelect
+            value={currentValue || []}
+            onChange={(ids) => handleChange(key, ids)}
           />
         )}
 

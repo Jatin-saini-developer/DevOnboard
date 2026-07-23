@@ -29,6 +29,7 @@ const componentMap = {
 
   // Other provider components
   slack: SlackNode,
+  'slack.addToChannels': SlackNode,
   jira: JiraNode,
   notion: NotionNode,
 }
