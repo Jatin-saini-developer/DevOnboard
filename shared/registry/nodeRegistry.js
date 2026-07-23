@@ -2,6 +2,7 @@ import { inviteNode } from './github/invite.js'
 import { teamNode } from './github/team.js'
 import { repositoryAccessNode } from './github/repositoryAccess.js'
 import { triggerNode } from './trigger/trigger.js'
+import { addToChannelsNode } from './slack/addToChannels.js'
 
 /**
  * Pure Metadata Node Registry.
@@ -15,6 +16,7 @@ const registry = new Map([
   [inviteNode.id, inviteNode],
   [teamNode.id, teamNode],
   [repositoryAccessNode.id, repositoryAccessNode],
+  [addToChannelsNode.id, addToChannelsNode],
 ])
 
 export const nodeRegistry = Object.freeze({
